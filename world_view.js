@@ -53,8 +53,8 @@
         f,
         h;
     self.move_by = function(vx,vy){
-      cursor_x += vx;
-      cursor_y += vy;
+      cursor_x = clamp(cursor_x + vx,zone_manager.width);
+      cursor_y = clamp(cursor_y + vy,zone_manager.height);
     };
     self.render = function(){
       var tile_x,
@@ -77,9 +77,9 @@
               if(map[y][x] !== undefined){
                 scene.remove(map[y][x]);
               }
-                var factor = (tile - 128) / 128,
-                  f,
-                  h;
+              var factor = (tile - 128) / 128,
+                f,
+                h;
               if(factor <= -0.25){ // deep water
                 f = 'rgba(0,0,128,1)';
               }else if(factor > -0.25 && factor <= 0){ // shallow water
@@ -114,6 +114,8 @@
     var self = {},
         zones = {},
         tile_cache = {};
+    self.width = width;
+    self.height = height;
     self.get_tile = function(x,y,callback){
       if(tile_cache[x + ',' + y] !== undefined){
         callback(tile_cache[x + ',' + y]);
@@ -130,8 +132,10 @@
           zones[zone_x + ',' + zone_y] = z;
         }
         zone = zones[zone_x + ',' + zone_y];
-        tile_cache[x + ',' + y] = zone.map[local_y][local_x];
-        callback(zone.map[local_y][local_x]);
+        if(zone.map[local_y] && zone.map[local_y][local_x]){
+          tile_cache[x + ',' + y] = zone.map[local_y][local_x];
+          callback(zone.map[local_y][local_x]);
+        }
       }
     };
     return self;
@@ -150,7 +154,7 @@
     }else{
       ne = ~~(Alea((y * world_width + (x + 1)) + seed)() * 255);
     }
-    if(y + 1 > whc){
+    if(y + 1 >= whc){
       sw = ~~(Alea(((0) * world_width + x) + seed)() * 255);
     }else{
       sw = ~~(Alea(((y + 1) * world_width + x) + seed)() * 255);
