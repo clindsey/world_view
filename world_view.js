@@ -11,13 +11,19 @@
     bind_elem.append(canvas_elem);
     var scene = Scene(context,canvas_elem.width,canvas_elem.height);
     MainScene(scene);
-    scene.render();
   });
   var MainScene = function(scene){
     scene.add(Background(scene.width,scene.height));
     var zone_manager = ZoneManager(SEED,100,100,10,10),
         viewport = Viewport(scene,26,26,20,zone_manager);
-    viewport.render();
+    var render_fn = function(){
+      viewport.render();
+      scene.render();
+      requestAnimationFrame(function(){
+        render_fn();
+      });
+    };
+    render_fn();
     jQuery(document).keydown(function(e){
       if(e.keyCode === 37 || e.keyCode === 38 || e.keyCode === 39 || e.keyCode === 40){
         var vx = 0,
@@ -35,8 +41,6 @@
           vy += 1;
         }
         viewport.move_by(vx,vy);
-        viewport.render();
-        scene.render();
       }
     });
   };
@@ -300,4 +304,19 @@
   var clamp = function(index,size){
     return (index + size) % size;
   };
+  /**
+   * Provides requestAnimationFrame in a cross browser way.
+   * @author paulirish / http://paulirish.com/
+   */
+  if ( !window.requestAnimationFrame ) {
+    window.requestAnimationFrame = ( function() {
+      return  window.webkitRequestAnimationFrame ||
+              window.mozRequestAnimationFrame ||
+              window.oRequestAnimationFrame ||
+              window.msRequestAnimationFrame ||
+              function( /* function FrameRequestCallback */ callback, /* DOMElement Element */ element ) {
+                window.setTimeout( callback, 1000 / 60 );
+              };
+    } )();
+  }
 })();
