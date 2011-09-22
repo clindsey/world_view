@@ -1,6 +1,6 @@
 (function(){
   //var SEED = (~~(Math.random() * 0xFFFFFF)).toString(16);
-  var SEED = 20110920;
+  var SEED = 20110921;
   Math.random = Alea(SEED);
   jQuery(document).ready(function(){
     var bind_elem = jQuery('#canvas'),
@@ -76,9 +76,7 @@
       }
       scene.clear();
       scene.draw(bg);
-      var tile_x,
-          tile_y,
-          tile,
+      var tile,
           start_x = Math.floor(width / 2),
           start_y = Math.floor(height / 2),
           factor,
@@ -90,48 +88,28 @@
         }
         for(x = 0; x < width; x += 1){
           (function(x,y,start_x,start_y,cursor_x,cursor_y){
-            if(map[y][x] === undefined){
-              var tile_x = (x - y) * (tile_size / 2) + (scene.width / 2) - (tile_size / 2),
-                  tile_y = (x + y) * (tile_size / 4) + (scene.height / 2) - (height * tile_size / 4);
-            }
             zone_manager.get_tile(x + cursor_x - start_x,y + cursor_y - start_y,function(tile){
               var h = tile.height,
                   f,
                   type = 'special';
               switch(tile.type){
-                case 'deep water':
-                  f = 'rgba(0,0,128,1)';
-                  break;
-                case 'shallow water':
-                  f = 'rgba(0,0,255,1)';
-                  break;
-                case 'shore':
-                  f = 'rgba(0,128,255,1)';
-                  break;
-                case 'sand':
-                  f = 'rgba(240,240,64,1)';
-                  break;
-                case 'grass':
-                  f = 'rgba(32,160,0,1)';
-                  break;
-                case 'dirt':
-                  f = 'rgba(224,224,0,1)';
-                  break;
-                case 'rock':
-                  f = 'rgba(128,128,128,1)';
-                  break;
-                case 'snow':
-                  f = 'rgba(255,255,255,1)';
+                case 'special':
+                  f = '#E9085F';
+                  h += 4;
                   break;
                 default:
-                  f = '#E9085F';
+                  f = tile.color;
                   break;
               }
               if(x === start_x && y === start_y){
-                h += 4;
+                if(tile.type !== 'special'){
+                  h += 4;
+                }
                 f = '#C54B2C';
               }
-              if(map[y][x] === undefined){
+              if(map[y][x] === undefined || map[y][x].height !== tile.height){
+                var tile_x = (x - y) * (tile_size / 2) + (scene.width / 2) - (tile_size / 2),
+                    tile_y = (x + y) * (tile_size / 4) + (scene.height / 2) - (height * tile_size / 4);
                 map[y][x] = Tile(tile_x,tile_y,tile_size,h,{'background-color':f},type);
               }else{
                 map[y][x].style['background-color'] = f;
@@ -172,7 +150,7 @@
       var clamped_x = clamp(x,width),
           clamped_y = clamp(y,height);
       if(buildings[clamped_x + ',' + clamped_y] !== undefined){
-        callback({'height':4,'type':'special'});
+        callback({'height':12,'type':'special'});
       }else if(tile_cache[clamped_x + ',' + clamped_y] !== undefined){
         callback(tile_cache[clamped_x + ',' + clamped_y]);
       }else{
@@ -234,7 +212,7 @@
     return self;
   };
   var Tile = function(x,y,size,h,style){
-    var height = 4;
+    var height = 8;
     var self = DisplayObject(x,y,size,size / 2 + height - h,style);
     self.type = '';
     self.add_vertex(size / 2,0 - height - h);
@@ -341,43 +319,71 @@
         v = t + yf * (b - t);
         var factor = (~~v - 128) / 128,
             h,
-            type = 'special';
+            type = 'special',
+            cr,
+            cg,
+            cb,
+            p;
         if(factor <= -0.25){ // deep water
-          f = 'rgba(0,0,128,1)';
+          cb = ~~tween(255,128,(Math.abs(factor) - 0.25) / 0.75);
+          f = 'rgba(0,0,' + cb + ',1)';
           type = 'deep water';
         }else if(factor > -0.25 && factor <= 0){ // shallow water
-          f = 'rgba(0,0,255,1)';
+          cg = ~~tween(128,0,(Math.abs(factor) / 0.25));
+          f = 'rgba(0,' + cg + ',255,1)';
           type = 'shallow water';
         }else if(factor > 0 && factor <= 0.0625){ // shore
-          f = 'rgba(0,128,255,1)';
+          p = factor / 0.0625;
+          cr = ~~tween(0,240,p);
+          cg = ~~tween(128,240,p);
+          cb = ~~tween(255,64,p);
+          f = 'rgba(' + cr + ',' + cg + ',' + cb + ',1)';
           type = 'shore';
         }else if(factor > 0.0625 && factor <= 0.3){ // sand
-          f = 'rgba(240,240,64,1)';
+          p = (factor - 0.0625) / 0.2375;
+          cr = ~~tween(240,32,p);
+          cg = ~~tween(240,160,p);
+          cb = ~~tween(64,0,p);
+          f = 'rgba(' + cr + ',' + cg + ',' + cb + ',1)';
           type = 'sand';
         }else if(factor > 0.3 && factor <= 0.7){ // grass
-          f = 'rgba(32,160,0,1)';
+          p = (factor - 0.3) / 0.4;
+          cr = ~~tween(32,224,p);
+          cg = ~~tween(160,224,p);
+          cb = 0;
+          f = 'rgba(' + cr + ',' + cg + ',' + cb + ',1)';
           type = 'grass';
         }else if(factor > 0.7 && factor <= 0.8){ // dirt
-          f = 'rgba(224,224,0,1)';
+          p = (factor - 0.7) / 0.1;
+          cr = ~~tween(224,128,p);
+          cg = ~~tween(224,128,p);
+          cb = ~~tween(0,128,p);
+          f = 'rgba(' + cr + ',' + cg + ',' + cb + ',1)';
           type = 'dirt';
         }else if(factor > 0.8 && factor <= 0.92){ // rock
-          f = 'rgba(128,128,128,1)';
+          p = (factor - 0.8) / 0.12;
+          cr = ~~tween(128,255,p);
+          cg = ~~tween(128,255,p);
+          cb = ~~tween(128,255,p);
+          f = 'rgba(' + cr + ',' + cg + ',' + cb + ',1)';
+          //f = 'rgba(128,128,128,1)';
           type = 'rock';
         }else{ // snow
           f = 'rgba(255,255,255,1)';
           type = 'snow';
         }
-        /*
         h = ~~(factor * 20);
         if(h < 4){
           h = 4;
         }
-        */
-        h = 4;
-        map[y][x] = {'height':h,'type':type};
+        //h = 4;
+        map[y][x] = {'height':h,'type':type,'color':f};
       }
     }
     return map;
+  };
+  var tween = function(a,b,f){
+    return a + f * (b - a);
   };
   var clamp = function(index,size){
     return (index + size) % size;
