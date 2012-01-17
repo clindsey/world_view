@@ -50,16 +50,14 @@
   var Viewport = function(scene,width,height,tile_size,zone_manager){
     var self = {},
         map = [],
-        cursor_x = localStorage['cursor_x'] || 0,
-        cursor_y = localStorage['cursor_y'] || 0,
+        cursor_x = 0,
+        cursor_y = 0,
         old_cursor_x,
         old_cursor_y,
         bg = Background(scene.width,scene.height);
     self.move_by = function(vx,vy){
       cursor_x = clamp(cursor_x + vx,zone_manager.width);
       cursor_y = clamp(cursor_y + vy,zone_manager.height);
-      //localStorage['cursor_x'] = cursor_x;
-      //localStorage['cursor_y'] = cursor_y;
     };
     self.change_tile = function(){
       zone_manager.get_tile(cursor_x,cursor_y,function(tile){
@@ -129,7 +127,7 @@
     var self = {},
         zones = {},
         tile_cache = {},
-        buildings = localStorage || {};
+        buildings = {};
     self.width = width;
     self.height = height;
     self.dirty = false;
